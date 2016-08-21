@@ -31,14 +31,9 @@ var xtend = require('xtend')
  * @param {IDBKeyRange} opts.range - a valid IndexedDB key range
  * @param {IDBCursorDirection} opts.direction - one of "next", "nextunique",
  *   "prev", "prevunique"
- * @param {Boolean} opts.reopenOnTimeout=true - Reopen a new cursor if it times
- *   out. This can happen if _next is not called fast enough. Every time the cursor
- *   is reopened it operates on a new snapshot of the database. This option is
- *   false by default.
- * @param {Boolean} opts.reopenOnTimeout=true - Automatically open a new
- *   IndexedDB cursor if it times out. This can happen if the consumer is slower
- *   than this stream. Remember that every time a new cursor is opened it operates
- *   on a new snapshot of the database. This option is true by default.
+ * @param {Boolean} opts.snapshot=false - Iterate over a snapshot of the database
+ *   by opening only one cursor. This disables any form of back pressure to prevent
+ *   cursor timeout issues.
  */
 function idbReadableStream(db, storeName, opts) {
   if (typeof db !== 'object') throw new TypeError('db must be an object')
@@ -55,7 +50,7 @@ function idbReadableStream(db, storeName, opts) {
   }))
 
   opts = xtend({
-    reopenOnTimeout: true
+    snapshot: false
   }, opts)
 
   var lastIteratedKey = null
@@ -102,7 +97,7 @@ function idbReadableStream(db, storeName, opts) {
         cursor.continue() // throws a TransactionInactiveError if the cursor timed out
       } catch(err) {
         // either reopen a cursor or propagate the error
-        if (err.name === 'TransactionInactiveError' && opts.reopenOnTimeout)
+        if (err.name === 'TransactionInactiveError' && !opts.snapshot)
           startCursor() // IndexedDB timed out the cursor
         else
           transformer.emit('error', err)
@@ -114,7 +109,8 @@ function idbReadableStream(db, storeName, opts) {
       if (cursor) {
         lastIteratedKey = cursor.key
 
-        if (transformer.write({ key: cursor.key, value: cursor.value }))
+        var drain = transformer.write({ key: cursor.key, value: cursor.value })
+        if (opts.snapshot || !drain)
           proceed(cursor)
         else
           transformer.once('drain', () => proceed(cursor))

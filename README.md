@@ -46,10 +46,9 @@ Options:
 * @param {IDBKeyRange} opts.range - a valid IndexedDB key range
 * @param {IDBCursorDirection} opts.direction - one of "next", "nextunique",
     "prev", "prevunique"
-* @param {Boolean} opts.reopenOnTimeout=true - Automatically open a new
-    IndexedDB cursor if it times out. This can happen if the consumer is slower
-    than this stream. Remember that every time a new cursor is opened it operates
-    on a new snapshot of the database. This option is true by default.
+* @param {Boolean} opts.snapshot=false - Iterate over a snapshot of the database
+    by opening only one cursor. This disables any form of back pressure to
+    prevent cursor timeout issues.
 
 
 ## License
