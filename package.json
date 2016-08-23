@@ -20,5 +20,8 @@
   "bugs": "https://github.com/timkuijsten/node-idb-readable-stream/issues",
   "dependencies": {
     "xtend": "^4.0.1"
+  },
+  "devDependencies": {
+    "tape": "^4.6.0"
   }
 }
