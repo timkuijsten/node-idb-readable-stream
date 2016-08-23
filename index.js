@@ -109,8 +109,8 @@ function idbReadableStream(db, storeName, opts) {
       if (cursor) {
         lastIteratedKey = cursor.key
 
-        var drain = transformer.write({ key: cursor.key, value: cursor.value })
-        if (opts.snapshot || !drain)
+        var go = transformer.write({ key: cursor.key, value: cursor.value })
+        if (opts.snapshot || go)
           proceed(cursor)
         else
           transformer.once('drain', () => proceed(cursor))
