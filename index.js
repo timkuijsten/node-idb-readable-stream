@@ -44,7 +44,7 @@ function idbReadableStream(db, storeName, opts) {
   // use transform stream for buffering and back pressure
   var transformer = new stream.Transform(xtend(opts, {
     objectMode: true,
-    transform: (obj, enc, cb) => {
+    transform: function(obj, enc, cb) {
       cb(null, obj)
     }
   }))
@@ -104,7 +104,7 @@ function idbReadableStream(db, storeName, opts) {
       }
     }
 
-    req.onsuccess = () => {
+    req.onsuccess = function() {
       var cursor = req.result
       if (cursor) {
         lastIteratedKey = cursor.key
@@ -113,15 +113,17 @@ function idbReadableStream(db, storeName, opts) {
         if (opts.snapshot || go)
           proceed(cursor)
         else
-          transformer.once('drain', () => proceed(cursor))
+          transformer.once('drain', function() {
+            proceed(cursor)
+          })
       } else
         transformer.end()
     }
 
-    tx.onabort = () => {
+    tx.onabort = function() {
       transformer.emit('error', tx.error)
     }
-    tx.onerror = () => {
+    tx.onerror = function() {
       transformer.emit('error', tx.error)
     }
   }
